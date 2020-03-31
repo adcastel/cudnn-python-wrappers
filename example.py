@@ -26,15 +26,15 @@ def end_bench(op):
     msecs  = end.time_since(start)
     print("%7.3f msecs" % (msecs))
 
-n_input = 64
-filters_in = 128
-filters_out = 128
-height_in = 112
-width_in = 112
-height_filter = 7
-width_filter = 7
-pad_h = 3
-pad_w = 3
+n_input = 1
+filters_in = 1
+filters_out = 1
+height_in = 4
+width_in = 4
+height_filter = 2
+width_filter = 2
+pad_h = 0
+pad_w = 0
 vertical_stride = 1
 horizontal_stride = 1
 upscalex = 1
@@ -43,13 +43,14 @@ alpha = 1.0
 beta = 1.0
 
 # Input tensor
+#X = gpuarray.to_gpu(np.zeros(n_input, filters_in, height_in, width_in)
 X = gpuarray.to_gpu(np.random.rand(n_input, filters_in, height_in, width_in)
     .astype(np.float32))
-
+print ("X", X)
 # Filter tensor
 filters = gpuarray.to_gpu(np.random.rand(filters_out,
     filters_in, height_filter, width_filter).astype(np.float32))
-
+print("filters",filters)
 # Descriptor for input
 X_desc = libcudnn.cudnnCreateTensorDescriptor()
 libcudnn.cudnnSetTensor4dDescriptor(X_desc, tensor_format, data_type,
@@ -69,13 +70,16 @@ libcudnn.cudnnSetConvolution2dDescriptor(conv_desc, pad_h, pad_w,
 # Get output dimensions (first two values are n_input and filters_out)
 _, _, height_output, width_output = libcudnn.cudnnGetConvolution2dForwardOutputDim(
     conv_desc, X_desc, filters_desc)
-
+print("height ",height_output, " width ", width_output)
 # Output tensor
 Y = gpuarray.empty((n_input, filters_out, height_output, width_output), np.float32)
 Y_desc = libcudnn.cudnnCreateTensorDescriptor()
 libcudnn.cudnnSetTensor4dDescriptor(Y_desc, tensor_format, data_type, n_input,
     filters_out, height_output, width_output)
+print("Y ", Y)
 
+Z = np.ones((n_input, filters_out, height_output, width_output), np.float32)
+print("Z ", Z)
 # Get pointers to GPU memory
 X_data = ctypes.c_void_p(int(X.gpudata))
 filters_data = ctypes.c_void_p(int(filters.gpudata))
@@ -96,6 +100,13 @@ start_bench()
 libcudnn.cudnnConvolutionForward(cudnn_context, alpha, X_desc, X_data,
     filters_desc, filters_data, conv_desc, algo, ws_data, ws_size.value, beta,
     Y_desc, Y_data)
+
+
+#drv.memcpy_dtoh(Y_desc, Y)
+#Z = (Y_data).get()
+
+Z=Y;
+print("Result ", Z)
 
 end_bench("fprop")
 
