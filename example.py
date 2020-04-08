@@ -27,16 +27,16 @@ def end_bench(op):
     print("%7.3f msecs" % (msecs))
 
 n_input = 1
-filters_in = 1
-filters_out = 1
-height_in = 4
-width_in = 4
+filters_in = 3
+filters_out = 4
+height_in = 24
+width_in = 24
 height_filter = 2
 width_filter = 2
 pad_h = 0
 pad_w = 0
-vertical_stride = 1
-horizontal_stride = 1
+vertical_stride = 2
+horizontal_stride = 2
 upscalex = 1
 upscaley = 1
 alpha = 1.0
@@ -101,7 +101,10 @@ libcudnn.cudnnConvolutionForward(cudnn_context, alpha, X_desc, X_data,
     filters_desc, filters_data, conv_desc, algo, ws_data, ws_size.value, beta,
     Y_desc, Y_data)
 
-
+act_desc=libcudnn.cudnnCreateActivationDescriptor()
+mode = 1
+libcudnn.cudnnSetActivationDescriptor(act_desc, mode, 0, 1.0)
+libcudnn.cudnnActivationForward(cudnn_context, act_desc, alpha, Y_desc, Y_data, beta, Y_desc, Y_data)
 #drv.memcpy_dtoh(Y_desc, Y)
 #Z = (Y_data).get()
 

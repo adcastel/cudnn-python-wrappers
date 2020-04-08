@@ -7,7 +7,7 @@ import ctypes
 import ctypes.util
 
 if sys.platform in ('linux2', 'linux'):
-    _libcudnn_libname_list = ['libcudnn.so', 'libcudnn.so.6', 'libcudnn.so.6.0.21']
+    _libcudnn_libname_list = ['libcudnn.so', 'libcudnn.so.7', 'libcudnn.so.6.0.21']
 elif sys.platform == 'darwin':
     _libcudnn_libname_list = ['libcudnn.dylib', 'libcudnn.6.dylib']
 elif sys.platform == 'win32':
@@ -240,7 +240,13 @@ cudnnPoolingMode = {
                                 # window is used. The algorithm used is
                                 # deterministic.
 }
-
+# cudnnNanPropagation_t is an enumerated type used to indicate if a given routine 
+# should propagate Nan numbers. This enumerated type is used as a field for the 
+# cudnnActivationDescriptor_t descriptor and cudnnPoolingDescriptor_t descriptor
+cudnnNanPropagation = {
+    'CUDNN_NOT_PROPAGATE_NAN' : 0,
+    'CUDNN_PROPAGATE_NAN' : 1
+}
 # cudnnActivationMode_t is an enumerated type used to select the neuron activation
 # function used in cudnnActivationForward() and cudnnActivationBackward() .
 cudnnActivationMode = {
@@ -248,7 +254,8 @@ cudnnActivationMode = {
     'CUDNN_ACTIVATION_RELU': 1,     # rectified linear function
     'CUDNN_ACTIVATION_TANH': 2,     # hyperbolic tangent function
     'CUDNN_ACTIVATION_CLIPPED_RELU': 3,
-    'CUDNN_ACTIVATION_ELU': 4
+    'CUDNN_ACTIVATION_ELU': 4,
+    'CUDNN_ACTIVATION_IDENTITY': 5
 }
 
 # cudnnNanPropagation_t is an enumerated type to specify the propogation of Nan
@@ -358,6 +365,50 @@ def cudnnGetStream(handle):
     status = _libcudnn.cudnnGetStream(handle, ctypes.byref(id))
     cudnnCheckStatus(status)
     return id.value
+
+
+_libcudnn.cudnnCreateActivationDescriptor.restype = int
+_libcudnn.cudnnCreateActivationDescriptor.argtypes = [ctypes.c_void_p]
+def cudnnCreateActivationDescriptor():
+    """
+    Create a Activation descriptor object.
+
+    Allocates a cudnnActivationDescriptor_t structure and returns a pointer to it.
+
+    Returns
+    -------
+    Activation_descriptor : int
+        Tensor descriptor.
+    """
+
+    activation = ctypes.c_void_p()
+    status = _libcudnn.cudnnCreateActivationDescriptor(ctypes.byref(activation))
+    cudnnCheckStatus(status)
+    return activation.value
+
+_libcudnn.cudnnSetActivationDescriptor.restype = int
+_libcudnn.cudnnSetActivationDescriptor.argtypes = [ctypes.c_void_p, ctypes.c_int, 
+                                                    ctypes.c_int, ctypes.c_double]
+def cudnnSetActivationDescriptor(activation_desc, mode, nan, coef):
+    """
+    Set a Activation descriptor object.
+
+    Allocates a cudnnActivationDescriptor_t structure and returns a pointer to it.
+    
+    Parameters
+    -----------
+    activation_desc:  cudnnActivationDescriptor
+        Handle to a previously created activation descriptor.
+    nan: cudnnNanPropagation
+        Enumerato to specify the nan propagation
+    Returns
+    -------
+    Activation_descriptor : int
+        Tensor descriptor.
+    """
+    
+    status = _libcudnn.cudnnSetActivationDescriptor(activation_desc, mode, nan,coef)
+    cudnnCheckStatus(status)
 
 _libcudnn.cudnnCreateTensorDescriptor.restype = int
 _libcudnn.cudnnCreateTensorDescriptor.argtypes = [ctypes.c_void_p]
@@ -1614,11 +1665,11 @@ def cudnnCreatePoolingDescriptor():
     return poolingDesc.value
 
 _libcudnn.cudnnSetPooling2dDescriptor.restype = int
-_libcudnn.cudnnSetPooling2dDescriptor.argtypes = [ctypes.c_void_p, ctypes.c_int,
+_libcudnn.cudnnSetPooling2dDescriptor.argtypes = [ctypes.c_void_p, ctypes.c_int,ctypes.c_int,
                                                 ctypes.c_int, ctypes.c_int,
                                                 ctypes.c_int, ctypes.c_int,
                                                 ctypes.c_int, ctypes.c_int]
-def cudnnSetPooling2dDescriptor(poolingDesc, mode, windowHeight, windowWidth,
+def cudnnSetPooling2dDescriptor(poolingDesc, mode, nan, windowHeight, windowWidth,
                                 verticalPadding, horizontalPadding, verticalStride, horizontalStride):
     """"
     Initialize a 2D pooling descriptor.
@@ -1629,6 +1680,8 @@ def cudnnSetPooling2dDescriptor(poolingDesc, mode, windowHeight, windowWidth,
     ----------
     poolingDesc : cudnnPoolingDescriptor
         Handle to a previously created pooling descriptor.
+    nan: cudnnNanPropagation
+        Enumerato to specify the nan propagation
     mode : cudnnPoolingMode
         Enumerant to specify the pooling mode.
     windowHeight : int
@@ -1645,7 +1698,7 @@ def cudnnSetPooling2dDescriptor(poolingDesc, mode, windowHeight, windowWidth,
         Pooling horizontal stride.
     """
 
-    status = _libcudnn.cudnnSetPooling2dDescriptor(poolingDesc, mode, windowHeight,
+    status = _libcudnn.cudnnSetPooling2dDescriptor(poolingDesc, mode, nan, windowHeight,
                                                  windowWidth, verticalPadding, horizontalPadding,
                                                  verticalStride, horizontalStride)
     cudnnCheckStatus(status)
@@ -1822,10 +1875,11 @@ def cudnnPoolingBackward(handle, poolingDesc, alpha, srcDesc, srcData, srcDiffDe
     cudnnCheckStatus(status)
 
 _libcudnn.cudnnActivationForward.restype = int
-_libcudnn.cudnnActivationForward.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p,
+#_libcudnn.cudnnActivationForward.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p,
+_libcudnn.cudnnActivationForward.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
                                              ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
                                              ctypes.c_void_p, ctypes.c_void_p]
-def cudnnActivationForward(handle, mode, alpha, srcDesc, srcData, beta, destDesc, destData):
+def cudnnActivationForward(handle, act_descriptor, alpha, srcDesc, srcData, beta, destDesc, destData):
     """"
     Apply activation function.
 
@@ -1841,7 +1895,7 @@ def cudnnActivationForward(handle, mode, alpha, srcDesc, srcData, beta, destDesc
     ----------
     handle : cudnnHandle
         Handle to a previously created cuDNN context.
-    mode : cudnnActivationMode
+    act_descriptor : New in this versione
         Enumerant to specify the activation mode.
     alpha: float
         Scaling factor with which every element of the input tensor is multiplied.
@@ -1869,7 +1923,7 @@ def cudnnActivationForward(handle, mode, alpha, srcDesc, srcData, beta, destDesc
         alphaRef = ctypes.byref(ctypes.c_float(alpha))
         betaRef = ctypes.byref(ctypes.c_float(beta))
 
-    status = _libcudnn.cudnnActivationForward(handle, mode, alphaRef, srcDesc, srcData,
+    status = _libcudnn.cudnnActivationForward(handle, act_descriptor, alphaRef, srcDesc, srcData,
                                               betaRef, destDesc, destData)
     cudnnCheckStatus(status)
 
