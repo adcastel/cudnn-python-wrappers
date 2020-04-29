@@ -1928,11 +1928,11 @@ def cudnnActivationForward(handle, act_descriptor, alpha, srcDesc, srcData, beta
     cudnnCheckStatus(status)
 
 _libcudnn.cudnnActivationBackward.restype = int
-_libcudnn.cudnnActivationBackward.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p,
+_libcudnn.cudnnActivationBackward.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
                                               ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
                                               ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
                                               ctypes.c_void_p, ctypes.c_void_p]
-def cudnnActivationBackward(handle, mode, alpha, srcDesc, srcData, srcDiffDesc, srcDiffData,
+def cudnnActivationBackward(handle,actDesc, alpha, srcDesc, srcData, srcDiffDesc, srcDiffData,
                             destDesc, destData, beta, destDiffDesc, destDiffData):
     """"
     Gradient of activation function.
@@ -1949,8 +1949,7 @@ def cudnnActivationBackward(handle, mode, alpha, srcDesc, srcData, srcDiffDesc, 
     ----------
     handle : cudnnHandle
         Handle to a previously created cuDNN context.
-    mode : cudnnActivationMode
-        Enumerant to specify the activation mode.
+    actDesc : activationdescriptor
     alpha: float
         Scaling factor with which every element of the input tensor is multiplied.
     srcDesc : cudnnTensorDescriptor
@@ -1986,7 +1985,7 @@ def cudnnActivationBackward(handle, mode, alpha, srcDesc, srcData, srcDiffDesc, 
     else:
         alphaRef = ctypes.byref(ctypes.c_float(alpha))
         betaRef = ctypes.byref(ctypes.c_float(beta))
-    status = _libcudnn.cudnnActivationBackward(handle, mode, alphaRef, srcDesc, srcData,
+    status = _libcudnn.cudnnActivationBackward(handle, actDesc, alphaRef, srcDesc, srcData,
                                                srcDiffDesc, srcDiffData,
                                                destDesc, destData, betaRef,
                                                destDiffDesc, destDiffData)
