@@ -1643,6 +1643,92 @@ def cudnnSoftmaxBackward(handle, algorithm, mode, alpha, srcDesc, srcData, srcDi
                                             destDiffDesc, destDiffData)
     cudnnCheckStatus(status)
 
+_libcudnn.cudnnCreateDropoutDescriptor.restype = int
+_libcudnn.cudnnCreateDropoutDescriptor.argtypes = [ctypes.c_void_p]
+def cudnnCreateDropoutDescriptor():
+    """"
+    Create dropout descriptor.
+
+    This function creates a dropout descriptor object by allocating the memory needed to
+    hold its opaque structure,
+
+    Returns
+    -------
+    dropoutDesc : cudnnDropoutDescriptor
+        Newly allocated dropout descriptor.
+    """
+
+    dropoutDesc = ctypes.c_void_p()
+    status = _libcudnn.cudnnCreateDropoutDescriptor(ctypes.byref(dropoutDesc))
+    cudnnCheckStatus(status)
+
+    return dropoutDesc.value
+
+_libcudnn.cudnnSetDropoutDescriptor.restype = int
+_libcudnn.cudnnSetDropoutDescriptor.argtypes = [ctypes.c_void_p, ctypes.c_void_p,
+                                               ctypes.c_float,ctypes.c_void_p,
+                                               ctypes.c_size_t,ctypes.c_ulonglong ]
+def cudnnSetDropoutDescriptor(dropDesc, handle, dropout, states, stateSizeInBytes, seed):
+    status = _libcudnn.cudnnSetDropoutDescriptor(dropDesc, handle, dropout, 
+            states, stateSizeInBytes, seed)
+    cudnnCheckStatus(status)
+
+_libcudnn.cudnnDropoutGetReserveSpaceSize.restype = int
+_libcudnn.cudnnDropoutGetReserveSpaceSize.argtypes = [ctypes.c_void_p]
+def cudnnDropoutGetReserveSpaceSize(xDesc):
+    """"
+    This function is used to query the amount of reserve needed to run dropout 
+    with the input dimensions given by xDesc
+    Returns
+    -------
+    The size in bytes
+    """
+    
+    sizeInBytes = ctypes.c_size_t()
+
+    status = _libcudnn.cudnnDropoutGetReserveSpaceSize(xDesc,ctypes.byref(sizeInBytes))
+    cudnnCheckStatus(status)
+
+    return sizeInBytes
+
+_libcudnn.cudnnDropoutGetStatesSize.restype = int
+_libcudnn.cudnnDropoutGetStatesSize.argtypes = [ctypes.c_void_p]
+def cudnnDropoutGetStatesSize(handle):
+    """"
+    This function is used to query the amount of space required to store 
+    the states of the random number generators used by cudnnDropoutForward() function
+    Returns
+    -------
+    The size in bytes
+    """
+    
+    sizeInBytes = ctypes.c_size_t()
+
+    status = _libcudnn.cudnnDropoutGetStatesSize(handle,ctypes.byref(sizeInBytes))
+    cudnnCheckStatus(status)
+
+    return sizeInBytes
+
+_libcudnn.cudnnDropoutForward.restype = int
+_libcudnn.cudnnDropoutForward.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
+                                          ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
+                                          ctypes.c_void_p, ctypes.c_size_t]
+def cudnnDropoutForward(handle, dropoutDesc, xDesc, x, yDesc, y, reserveSpace, reserveSpaceSizeInBytes):
+    status = _libcudnn.cudnnDropoutForward(handle, dropoutDesc, xDesc, x, yDesc, y, 
+                                             reserveSpace, ctypes.c_size_t(reserveSpaceSizeInBytes))
+    cudnnCheckStatus(status)
+
+_libcudnn.cudnnDropoutBackward.restype = int
+_libcudnn.cudnnDropoutBackward.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
+                                          ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
+                                          ctypes.c_void_p, ctypes.c_void_p]
+def cudnnDropoutBackward(handle, dropoutDesc, dyDesc, dy, dxDesc, dx, reserveSpace, reserveSpaceSizeInBytes):
+    
+    status = _libcudnn.cudnnDropoutBackward(handle, dropoutDesc,dyDesc, dy, dxDesc, dx, 
+                                             reserveSpace, reserveSpaceSizeInBytes)
+
+    cudnnCheckStatus(status)
+
 _libcudnn.cudnnCreatePoolingDescriptor.restype = int
 _libcudnn.cudnnCreatePoolingDescriptor.argtypes = [ctypes.c_void_p]
 def cudnnCreatePoolingDescriptor():
